@@ -1,0 +1,47 @@
+---
+title: "StatisticalInference_CourseProj"
+author: "Herpich"
+date: "Monday, November 17, 2014"
+output: html_document
+---
+
+The first part of the course project examines an exponential distribution, whose pdf takes the form f(x;lambda) = lambda * e ^ (-lambda * x) for x >= 0.  In this assignment, I assume lambda = 0.2.  I know that for an exponential distribution, the mean and standard deviation both equal 1/lambda, or in this case 5.
+
+I first start with plotting the probability density function and cumulative distribution function for the exponential distribution with lambda 0.2.  I know that the mean will be 5 and the median will be ln2/0.2 = 3.465, so Fx should show 50% at x = 3.465.
+
+
+```{r}
+x <- seq(0,15,length=100)
+fx <- dexp(x, 0.2)
+Fx <- pexp(x, 0.2)
+par(mfrow=c(1,2))
+plot(x,fx,main="Probability Density Function")
+plot(x,Fx,main="Cumulative Distribution Function")
+```
+
+I then generate 40 random exponentials with lambda 0.2 and plot a histogram.  I would expect this histogram to have the general shape of fx plotted above.  Given the Central Limit Theorem, I know that for large enough n, a plot of the distribution of the average of 40 random exponentials with lambda 0.2 will be approximately normally distributed.  For purposes of this exercise, I have run 1,000 instances.  The two plots are shown below.
+
+```{r}
+var <- NULL
+for (i in 1:40) var <- c(var, rexp(1,0.2))
+var2 <- NULL
+for (i in 1:1000) var2 <- c(var2,mean(rexp(40,0.2)))
+par(mfrow=c(1,2))
+normx <- seq(-4,4,length=100)*0.79 + 5
+normhx <- dnorm(normx,5,0.79)
+hist(var, freq=F, main="40 Random Exponentials")
+hist(var2, freq=F, main = "1,000 Averages Of \n40 Random Exponentials")
+lines(normx,normhx)
+```
+
+The behavior of the second plot is exactly as one would expect: the sample mean is centered at 5, the sample variance is (5)^2/40 = 0.625, and the sample error is 5/sqrt(40) = 0.79.  This is demonstrated by overlaying a normal distribution with mean 5 and standard deviation 0.79 over the histogram and by calculating the values as shown below.
+
+```{r}
+##Sample mean (expected 5):
+mean(var2)
+##Sample variance (expected 0.625):
+var(var2)
+##Standard error (expected 0.79):
+sd(var2)
+```
+

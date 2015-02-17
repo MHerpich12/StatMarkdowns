@@ -1,0 +1,108 @@
+---
+title: "LinearRegressionProject"
+author: "Herpich"
+date: "Wednesday, January 21, 2015"
+output: html_document
+---
+
+EXECUTIVE SUMMARY:
+
+The purpose of this project is to use the mtcars dataset available in R to form conclusions around the potential benefit of automatic versus manual transmission in miles per gallon (mpg).  The mtcars dataset was extracted from Motor Trend magazine in 1974 and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles.  Salient characteristics include quarter mile time, horsepower, cylinders, transmission type, and weight (in MLbs).
+
+To determine the relative benefit of transmission on miles per gallon, a linear model was formed via a step-wise generation of linear models across all coefficients regressed against mpg.  This model produced statistically significant coefficients for transmission (as a factor variable, 1=manual and 0=automatic), quarter mile time, and weight as a function Yi = Bo + B1am[1/0] + B2qsec + B3wt.  Not all characteristics proved statistically significant (many are correlated; e.g., weight, cyildenrs, and hp), and given the small number of samples, minimizing the predictors will help avoid large variances.
+
+LINEAR MODEL GENERATION:
+
+To first explore the variables, a linear regression has been constructed where mpg is regressed across all potential predictors.  The point of this is to gauge relative potential significance by examining the p-values of each coefficient.  The lower the p-value, the more statistically significant the predictor.  As shown by the output, the predictors with the lowest p-values aside from transmission type are weight and quarter mile time.
+
+
+```{r, echo=FALSE, results= 'hide'}
+library(datasets)
+data(mtcars)
+mtcars$am <- factor(mtcars$am)
+fit <- lm(mpg~.,mtcars)
+```
+
+```{r, echo=FALSE, results='hide'}
+summary(fit)$coef
+```
+
+A step-wise generation of a linear model is then employed using the R function step() across all potential predictors to generate a "best-fit" model.  As anticipated, weight and quarter mile time are both included as predictors in addition to transmission type.  The p-values for both weight and qsec indicate statistical significance, as does the coefficient for the transmission factor (am=1).
+
+
+```{r, echo=FALSE, results= 'hide'}
+library(datasets)
+data(mtcars)
+mtcars$am <- factor(mtcars$am)
+fit1 <- step(lm(mpg~.,mtcars))
+```
+
+```{r}
+summary(fit1)$coef
+```
+
+As a final check, linear models have been generated beginning with transmission (fit2a) and subsequently including weight (fit2b) and both weight and quarter mile time (fit2c).  The anova() R function compares the linear models for incremental statistical significance, and as shown by the output, the addition of both predictors is significant.
+
+
+```{r, echo=FALSE}
+library(datasets)
+data(mtcars)
+fit2a <- lm(mpg~factor(am),mtcars)
+fit2b <- lm(mpg~factor(am)+wt,mtcars)
+fit2c <- lm(mpg~factor(am)+wt+qsec,mtcars)
+anova(fit2a,fit2b,fit2c)
+```
+
+LINEAR MODEL INTERPRETATION:
+
+As shown above, the linear model generated took the form MPG = 9.62 - 3.92 x wt + 1.23 x qsec + 2.94 x am.  The intercept term, 9.62, represents the mpg for an automatic transmission (am=0) at a weight of 0 and quarter mile time of 0.  More importantly, the average mpg for automatic transmissions (17.15) is equal to the intercept, 9.62, minus 3.92 x average weight of auto cars plus 1.23 x average quarter mile time of auto cars (9.62 - (3.92x3.77) + (1.23x18.18) = 17.15).  The coefficient of am, 2.94, indicates the expected change in average mpg for manual cars versus automatic cars at a given weight and quarter mile time.  Since this is positive, and given the coefficient's p-value is less than 5% (4.7%), the model indicates there is a statistically significant benefit for manual transmission cars of 2.94mpg for a given weight and qsec.  Or, said another way, the average mpg for manual cars of 24.39 is equal to the intercept minus 3.92 x average weight of manual cars plus 1.23 x average quarter mile time of manual cars plus 2.94 (9.62 - (3.92x2.41) + (1.23x17.36) + (2.94x1) = 24.39).  The mean mpgs of the automatic and manual cars are shown below.
+
+```{r, echo=FALSE}
+mtman <- subset(mtcars,mtcars$am==1)
+mtauto <- subset(mtcars,mtcars$am==0)
+```
+```{r, echo=FALSE}
+mean(mtauto$mpg)
+mean(mtman$mpg)
+```
+
+Residual plots can be found in the Appendix.  Based on the residual plots, there seems to be no major heteroskedasticity or other patterned behaviors not accounted for by the model.  The residual plots seem to be highly varied.
+
+DISCLAIMERS:
+
+Though the model did show a statistically significant benefit of 2.94mpg for manual cars, the data itself needs to be examined.  Firstly, there are only 32 datapoints, hardly enough for a robust analysis.  Secondly, there are more automatic points (19 vs 13), and of the automatic points, the majority are heavier, eight-cylinder cars (12 of 19) versus the majority lighter, four-cylinder manual cars (8 of 13).  This is especially evident in the Appendix plot of weight vs mpg by transmission - there is very little overlap between the two types (and the linear fit of mpg vs weight would indicate automatic cars are better at higher weights).  As we know, lighter, cars with fewer cylinders and less horsepower tend to me more gas-efficient.  Thus, to form a more robust linear model, the data needs to be more normalized across important parameters.
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+library("ggplot2")
+mtcars$am <- factor(mtcars$am)
+g <- ggplot(mtcars, aes(mtcars$wt,mtcars$mpg)) 
+p <- g + geom_point(aes(color = mtcars$am,size = 4, alpha = 1)) + geom_smooth(aes(mtcars$wt,mtcars$mpg, group = mtcars$am),method='lm') + labs(title = "Weight VS MPG By Transmission", x = "Weight (MLbs)", y = "MPG")
+plot(p)
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+g1 <- ggplot(mtcars, aes(mtcars$qsec,mtcars$mpg)) 
+p1 <- g1 + geom_point(aes(color = mtcars$am,size = 4, alpha = 1))+geom_smooth(aes(mtcars$qsec,mtcars$mpg, group = mtcars$am),method='lm') + labs(title = "Quarter Mile Time VS MPG By Transmission", x = "Quarter Mile (Sec)", y = "MPG")
+plot(p1)
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+g2 <- ggplot(mtcars, aes(mtcars$cyl,mtcars$mpg)) 
+p2 <- g2 + geom_point(aes(color = mtcars$am,size = 4, alpha = 1))+geom_smooth(aes(mtcars$cyl,mtcars$mpg, group = mtcars$am),method='lm') + labs(title = "Cylinders VS MPG By Transmission", x = "Cylinders", y = "MPG")
+plot(p2)
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+g3 <- ggplot(mtcars, aes(mtcars$hp,mtcars$mpg)) 
+p3 <- g3 + geom_point(aes(color = mtcars$am,size = 4, alpha = 1))+geom_smooth(aes(mtcars$hp,mtcars$mpg, group = mtcars$am),method='lm') + labs(title = "Horsepower VS MPG By Transmission", x = "Horsepower", y = "MPG")
+plot(p3)
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+plot(predict(fit),resid(fit),pch='.')
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=7}
+par(mfrow=c(2,2))
+plot(fit)
+```

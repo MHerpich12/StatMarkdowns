@@ -1,0 +1,106 @@
+---
+title: "StatisticalInference_CourseProj2"
+author: "Herpich"
+date: "Wednesday, November 19, 2014"
+output: html_document
+---
+
+The second part of the course project reviews the ToothGrowth data in the R datasets package.  As a background, this data measures the length of odontoblasts(teeth) in each of 10 guinea pigs after receiving various dosages of Vitamin C (0.5, 1.0, and 2.0 mg) with each of two delivery methods (orange juice or ascorbic acid).  For purposes of this assignment, I have assumed these are non-paired, i.i.d. measurements.
+
+To start, I will create boxplots for each dosage within each delivery message to see if any trends could be present.  I will assume that increasing dosages of Vitamin C should show higher mean teeth length, but whether or not this is statistically significant or whether the delivery method matters remains to be seen.
+
+
+```{r}
+library(datasets)
+data(ToothGrowth)
+OJFrame <- subset(ToothGrowth, supp == "OJ")
+OJFrame1 <- subset(OJFrame, dose == 0.5)
+OJFrame2 <- subset(OJFrame, dose == 1.0)
+OJFrame3 <- subset(OJFrame, dose == 2.0)
+OJSumm <- data.frame(OJFrame1$len,OJFrame2$len,OJFrame3$len)
+names(OJSumm) <- c("0.5","1.0","2.0")
+VCFrame <- subset(ToothGrowth, supp == "VC")
+VCFrame1 <- subset(VCFrame, dose == 0.5)
+VCFrame2 <- subset(VCFrame, dose == 1.0)
+VCFrame3 <- subset(VCFrame, dose == 2.0)
+VCSumm <- data.frame(VCFrame1$len,VCFrame2$len,VCFrame3$len)
+names(VCSumm) <- c("0.5","1.0","2.0")
+par(mfrow=c(1,2))
+boxplot(OJSumm, main="Orange Juice", xlab="Dose (mg)", ylab="Length", ylim=c(0,40))
+boxplot(VCSumm, main="Ascorbic Acid",xlab="Dose (mg)", ylab="Length", ylim=c(0,40))
+```
+
+As evidenced by the boxplots, a trend seems to be present implying that higher dosages of Vitamin C will yield longer teeth.
+
+To determine if this trend is statistically significant, I will run three t tests for each delivery method.  I will extract from these t tests 2 things: 1) the 95% confidence interval, which indicates that the population mean will fall between the two boundaries 95% of the time and 2) the p-value, which estimates the probability that a more extreme result relative to the null hypothesis would occur.  I have assumed the p-value generated is two-sided.  The p-value is typically compared to alpha, or the Type I error rate (the percent of the time the null hypothesis is rejected erroneously).  For purposes of this exercise, I will assume a Type I error rate of 5%, which means that the null hypothesis cannot be rejected for p-values > 5%.  Given the data is not paired, I will set the paired input to false.  I will also assume that the population variances are not equal. 
+
+```{r}
+##T Test 1: 1.0 mg vs 0.5 mg
+t.test(OJSumm[[2]],OJSumm[[1]],paired=FALSE,var.equal=FALSE)$conf
+t.test(OJSumm[[2]],OJSumm[[1]],paired=FALSE,var.equal=FALSE)$p.val*100
+##T Test 2: 2.0 mg vs 0.5 mg
+t.test(OJSumm[[3]],OJSumm[[1]],paired=FALSE,var.equal=FALSE)$conf
+t.test(OJSumm[[3]],OJSumm[[1]],paired=FALSE,var.equal=FALSE)$p.val*100
+##T Test 3: 2.0 mg vs 1.0 mg
+t.test(OJSumm[[3]],OJSumm[[2]],paired=FALSE,var.equal=FALSE)$conf
+t.test(OJSumm[[3]],OJSumm[[2]],paired=FALSE,var.equal=FALSE)$p.val*100
+```
+
+As seen from the t tests, the null hypothesis that the difference in means is zero (i.e., increasing dosages of Vitamin C will have no effect on tooth length) can be rejected for all 3 cases given that 1) the 95% confidence interval fails to include 0 in any case and that 2) the p-value is less than 5% for all 3 cases (though the p-value approaches 5% in the 2.0mg vs 1.0mg case, indicating that the benefits of higher dosage are less statistically significant as the dosage is increased).  
+
+The same results hold for the ascorbic acid delivery method, as shown below.
+
+```{r}
+##T Test 1: 1.0 mg vs 0.5 mg
+t.test(VCSumm[[2]],VCSumm[[1]],paired=FALSE,var.equal=FALSE)$conf
+t.test(VCSumm[[2]],VCSumm[[1]],paired=FALSE,var.equal=FALSE)$p.val*100
+##T Test 2: 2.0 mg vs 0.5 mg
+t.test(VCSumm[[3]],VCSumm[[1]],paired=FALSE,var.equal=FALSE)$conf
+t.test(VCSumm[[3]],VCSumm[[1]],paired=FALSE,var.equal=FALSE)$p.val*100
+##T Test 3: 2.0 mg vs 1.0 mg
+t.test(VCSumm[[3]],VCSumm[[2]],paired=FALSE,var.equal=FALSE)$conf
+t.test(VCSumm[[3]],VCSumm[[2]],paired=FALSE,var.equal=FALSE)$p.val*100
+```
+
+The other relationship to look at is whether the delivery method of Vitamin C is statistically significant for particular dosages.  Aggregating all of the dosages and creating boxplots by delivery method would imply that guinea pigs that received Vitamin C via orange juice generally had longer teeth.
+
+```{r}
+OJFrame <- subset(ToothGrowth, supp == "OJ")
+VCFrame <- subset(ToothGrowth, supp == "VC")
+OutFrame <- data.frame(OJFrame$len,VCFrame$len)
+names(OutFrame) <- c("Orange Juice", "Ascorbic Acid")
+boxplot(OutFrame, ylab="Length")
+```
+
+I will first run a t test on the aggregate data with the null hypothesis that the mean difference between the two sets is zero.  I will keep our alpha assumption at 5%.
+
+
+```{r}
+t.test(OutFrame[[1]],OutFrame[[2]],paired=FALSE,var.equal=FALSE)$conf
+t.test(OutFrame[[1]],OutFrame[[2]],paired=FALSE,var.equal=FALSE)$p.val*100
+```
+
+As shown by the t tests, the null hypothesis cannot be rejected, as both 1) the 95% confidence interval contains zero and 2) the p-value is greater than 5%.
+
+However, the boxplots demonstrate that at lower dosages, Vitamin C delivery seemed to yield greater impact.  This is particularly evident in a review of the mean by dosage by delivery type - OJ clearly outperforms for the 0.5 mg and 1.0 mg dosages.
+
+```{r}
+sapply(OJSumm,mean)
+sapply(VCSumm,mean)
+```
+
+Thus, a more appropriate procedure would be to run the non-paired t test methodology for each dosage group between the two delivery methods to determine if a statistically significant relationship exists.  The null hypothesis remains the same: the mean of the difference will be zero.  I will again assume an alpha of 5%.
+
+```{r}
+##T Test 1: 0.5 mg dosage
+t.test(OJSumm[[1]],VCSumm[[1]],paired=FALSE,var.equal=FALSE)$conf
+t.test(OJSumm[[1]],VCSumm[[1]],paired=FALSE,var.equal=FALSE)$p.val*100
+##T Test 2: 1.0 mg dosage
+t.test(OJSumm[[2]],VCSumm[[2]],paired=FALSE,var.equal=FALSE)$conf
+t.test(OJSumm[[2]],VCSumm[[2]],paired=FALSE,var.equal=FALSE)$p.val*100
+##T Test 3: 2.0 mg dosage
+t.test(OJSumm[[3]],VCSumm[[3]],paired=FALSE,var.equal=FALSE)$conf
+t.test(OJSumm[[3]],VCSumm[[3]],paired=FALSE,var.equal=FALSE)$p.val*100
+```
+
+As shown by the results, delivery of the Vitamin C by orange juice does have a statistically significant benefit versus delivery by ascorbic acid at lower dosages.  This result can be gleaned given that 1) the 95% confidence interval does not include 0 in either case and 2) the p-values are well below our alpha threshold of 5%.  However, this benefit seems to disappear for the 2.0 mg sample group, as the mean for the ascorbic acid case and the orange juice case seem to converge (in fact, the ascorbic acid mean is slightly higher).
